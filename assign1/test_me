@@ -1,0 +1,148 @@
+#!/usr/bin/perl
+
+# ************** IMPORTANT! Do Not Change This File! ************************
+# This script verifies your results against ours and summarises any mismatch.
+# It will also display the grade for the coding part.
+# If there are any difficulties running the script, report to the course staff
+
+$scriptDir = $0;
+$scriptDir =~ s/test_me/\./;
+$codeDir = "$scriptDir";
+$binary = "$codeDir/diskimageaccess";
+$testcaseDir = "/usr/class/cs110/samples/assign1/testdisks";
+@testcases = (basicDiskImage, depthFileDiskImage, dirFnameSizeDiskImage);
+$num_cases = $#testcases + 1;
+%Grades = ();
+
+
+print "CS110 - Assignment-1\n";
+print "Sanity Check 1: This script expects the directories $codeDir and $testcaseDir to exist.\n";
+print "Sanity Check 2: The current directory should contain the compiled executable \"diskimageaccess\" \n";
+print "Sanity Check 3: Do not modify the \"testdisks\" folder. (eg. adding/deleting/editing imagefiles etc...) \n";
+
+
+#print "Checking $scriptDir $codeDir $testcaseDir\n";
+
+if (!(-d "$codeDir") || !(-d "$testcaseDir")) {
+    print "ERROR: Sanity Check 1 failed! \n";
+    exit;
+}
+
+if (!(-e "$binary")) {
+    print "ERROR: Sanity Check 2 failed! \n";
+    exit;
+}
+
+foreach $case (@testcases) {
+    if (!(-e "$testcaseDir/$case") || !(-e "$testcaseDir/$case.gold")) {
+	print "ERROR: Sanity Check 3 failed! (case - $case not found) \n";
+	exit;
+    }
+    $Grades{$case} = 0;
+}
+
+print "Sanity Checks successful!\n";
+print "Running Tests....\n";
+
+foreach $case (@testcases) {
+    print "\nCase: $case checking...\n";
+    print &check_inode_cksum($case);
+    print &check_path_cksum($case);    
+}
+
+my $grade = "$scriptDir/FUNCTIONALITY_GRADE";
+open FUNCTIONALITY_GRADE, ">$grade" or die "ERROR: could not open FUNCTIONALITY_GRADE!\n";
+
+print "\n\nFunctionality Grade Summary\n";
+printf(FUNCTIONALITY_GRADE "\nFunctionality Grade Summary\n");
+
+$total = 0;
+foreach $case (@testcases) {
+    print "Case: $case = $Grades{$case}/20\n";
+    printf (FUNCTIONALITY_GRADE "Case: $case = $Grades{$case}/20\n");
+    $total += $Grades{$case};
+}
+print "Total: $total/60\n\n";
+printf (FUNCTIONALITY_GRADE "Total: $total/60\n");
+
+close FUNCTIONALITY_GRADE;
+
+sub check_inode_cksum {
+    my($case) = @_;
+
+    # Checksum array of gold inodes
+    my @Glist = `grep "Inode " $testcaseDir/$case.gold`;
+    my %Garray;
+    foreach my $Gitem (@Glist) {
+	chomp $Gitem;
+	my @Gtok = split(/ /, $Gitem);
+	my $inum = $Gtok[1];
+	my $cksum = $Gtok[7];
+	$Garray{$inum} = $cksum;
+	#print "Garray($inum) = $Garray{$inum} \n";
+    }
+    
+    # Checksum array of test inodes
+    my @Tlist = `$binary -qi $testcaseDir/$case | grep "Inode "`;
+    my %Tarray;
+    foreach my $Titem (@Tlist) {
+	chomp $Titem;
+	my @Ttok = split(/ /, $Titem);
+	my $inum = $Ttok[1];
+	my $cksum = $Ttok[7];
+	$Tarray{$inum} = $cksum;
+	#print "Tarray($inum) = $Tarray{$inum} \n";
+    }
+
+    # Count inode matches
+    my $count=0;
+    foreach my $inum (keys %Garray) {
+	if ($Tarray{$inum} =~ /$Garray{$inum}/) {
+	    #print "DBG: Matched $inum $Tarray{$inum} $Garray{$inum}\n";
+	    $count = $count + 1;
+	}
+    }
+
+    if ($count == scalar(keys %Garray)) { $Grades{$case} += 10; }
+    return "Inode check: $count successful of ".scalar(keys %Garray)." inodes\n";    
+}
+
+sub check_path_cksum {
+    my($case) = @_;
+
+    # Checksum array of gold paths
+    my @Glist = `grep "Path " $testcaseDir/$case.gold`;
+    my %Garray;
+    foreach my $Gitem (@Glist) {
+	chomp $Gitem;
+	my @Gtok = split(/ /, $Gitem);
+	my $inum = $Gtok[2];
+	my $cksum = $Gtok[8];
+	$Garray{$inum} = $cksum;
+	#print "Garray($inum) = $Garray{$inum} \n";
+    }
+    
+    # Checksum array of test inodes
+    my @Tlist = `$binary -qp $testcaseDir/$case | grep "Path "`;
+    my %Tarray;
+    foreach my $Titem (@Tlist) {
+	chomp $Titem;
+	my @Ttok = split(/ /, $Titem);
+	my $inum = $Ttok[2];
+	my $cksum = $Ttok[8];
+	$Tarray{$inum} = $cksum;
+	#print "Tarray($inum) = $Tarray{$inum} \n";
+    }
+
+    # Count inode matches
+    my $count=0;
+    foreach my $inum (keys %Garray) {
+	if ($Tarray{$inum} =~ /$Garray{$inum}/) {
+	    #print "DBG: Matched $inum $Tarray{$inum} $Garray{$inum}\n";
+	    $count = $count + 1;
+	}
+    }
+
+    if ($count == scalar(keys %Garray)) { $Grades{$case} += 10; }
+    return "Pathname check: $count successful of ".scalar(keys %Garray)." pathnames\n";    
+}

@@ -1,0 +1,9 @@
+*.d
+*.o
+diskimageaccess
+*.a
+testdisks
+.hg
+.tags*
+.hgtags
+disksearch
