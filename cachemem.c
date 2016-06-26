@@ -1,5 +1,5 @@
 /**
- * cachemem.c  -  This module allocates the memory for caches. 
+ * cachemem.c  -  This module allocates the memory for caches.
  */
 
 #include <stdio.h>
@@ -19,20 +19,20 @@ void *cacheMemPtr;
 
 /**
  * Allocate memory of the specified size for the data cache optimizations
- * Return -1 on error, 0 on success. 
+ * Return -1 on error, 0 on success.
  */
 
 int CacheMem_Init(int sizeInKB) {
   /**
-   * Size needs to be not negative or too big and 
-   * multiple of the 4KB page size 
+   * Size needs to be not negative or too big and
+   * multiple of the 4KB page size
    */
   if ((sizeInKB < 0) || (sizeInKB > (CACHEMEM_MAX_SIZE/1024)) || (sizeInKB % 4)) {
     fprintf(stderr, "Bad cache size %d\n", sizeInKB);
     return -1;
   }
 
-  void *memPtr = mmap(NULL, 1024 * sizeInKB, PROT_READ | PROT_WRITE, 
+  void *memPtr = mmap(NULL, 1024 * sizeInKB, PROT_READ | PROT_WRITE,
 		      MAP_PRIVATE|MAP_ANON, -1, 0);
   if (memPtr == MAP_FAILED) {
     perror("mmap");
@@ -41,6 +41,6 @@ int CacheMem_Init(int sizeInKB) {
 
   cacheMemSizeInKB = sizeInKB;
   cacheMemPtr = memPtr;
+  memset(memPtr, 0x00, 1024 * sizeInKB);
   return 0;
 }
-
