@@ -61,7 +61,7 @@ int diskimg_readsector(int fd, int sectorNum, void *buf) {
   line->valid = 1;
   line->tag = tag;
   memcpy(line->block, buf, DISKIMG_SECTOR_SIZE);
-  printf("cache miss %d++++++++++++++++++++++++++++++++++++++++\n", sectorNum);
+  //printf("cache miss %d++++++++++++++++++++++++++++++++++++++++\n", sectorNum);
   return ret;
 }
 
